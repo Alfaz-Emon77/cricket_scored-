@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JB Premier League - Points Table</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(229, 231, 235, 1);
+        }
+        .btn-action {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-action:active {
+            transform: scale(0.95);
+        }
+        .editable-name {
+            border-bottom: 1px dashed #ccc;
+            cursor: pointer;
+        }
+        .qualifier {
+            background-color: rgba(34, 197, 94, 0.1);
+        }
+        .qualifier-badge {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            background: #22c55e;
+            color: white;
+            border-radius: 4px;
+            margin-left: 8px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-900 font-sans p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Header Section -->
+        <header class="text-center mb-10">
+            <h1 id="tournament-name" contenteditable="true" class="text-4xl md:text-5xl font-extrabold text-blue-800 mb-2 focus:text-blue-600">
+                JB Premier League
+            </h1>
+            <div class="flex justify-center items-center gap-4 mt-2">
+                 <p class="text-slate-500 italic">Data saves automatically in your browser.</p>
+            </div>
+        </header>
+
+        <!-- Main Tables -->
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8" id="app">
+            <!-- Group A -->
+            <div class="space-y-4">
+                <h2 class="text-2xl font-bold text-slate-700 flex items-center px-2">
+                    <span class="bg-blue-600 text-white px-3 py-1 rounded-lg mr-3">Group A</span>
+                </h2>
+                <div class="overflow-x-auto rounded-xl shadow-lg border border-slate-200">
+                    <table class="w-full text-left glass-card">
+                        <thead class="bg-slate-100 text-slate-600 uppercase text-xs font-bold">
+                            <tr>
+                                <th class="px-4 py-3">Team</th>
+                                <th class="px-2 py-3 text-center">W/L</th>
+                                <th class="px-2 py-3 text-center">Base</th>
+                                <th class="px-2 py-3 text-center">Bonus</th>
+                                <th class="px-2 py-3 text-center">Total</th>
+                                <th class="px-4 py-3 text-right">Update Match</th>
+                            </tr>
+                        </thead>
+                        <tbody id="group-a-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Group B -->
+            <div class="space-y-4">
+                <h2 class="text-2xl font-bold text-slate-700 flex items-center px-2">
+                    <span class="bg-emerald-600 text-white px-3 py-1 rounded-lg mr-3">Group B</span>
+                </h2>
+                <div class="overflow-x-auto rounded-xl shadow-lg border border-slate-200">
+                    <table class="w-full text-left glass-card">
+                        <thead class="bg-slate-100 text-slate-600 uppercase text-xs font-bold">
+                            <tr>
+                                <th class="px-4 py-3">Team</th>
+                                <th class="px-2 py-3 text-center">W/L</th>
+                                <th class="px-2 py-3 text-center">Base</th>
+                                <th class="px-2 py-3 text-center">Bonus</th>
+                                <th class="px-2 py-3 text-center">Total</th>
+                                <th class="px-4 py-3 text-right">Update Match</th>
+                            </tr>
+                        </thead>
+                        <tbody id="group-b-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scoring Rules -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
+            <div class="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                <h3 class="font-bold text-slate-800 mb-2">Scoring Rules:</h3>
+                <ul class="text-sm text-slate-600 space-y-2">
+                    <li class="flex items-start"><span class="w-2 h-2 bg-blue-500 rounded-full mr-2 mt-1.5 shrink-0"></span> <span><strong>Win:</strong> +2 Pts | <strong>Loss:</strong> 0 Base Pts (No penalty)</span></li>
+                    <li class="flex items-start"><span class="w-2 h-2 bg-emerald-500 rounded-full mr-2 mt-1.5 shrink-0"></span> <span><strong>Bonus:</strong> 8 runs = 0.1 | 1 wicket = 0.1</span></li>
+                </ul>
+            </div>
+            <div class="flex flex-col justify-center items-center p-6 bg-slate-100 rounded-2xl border border-dashed border-slate-300">
+                <button onclick="resetData()" class="bg-red-50 text-red-600 border border-red-200 px-6 py-2 rounded-lg font-bold hover:bg-red-600 hover:text-white transition-all">
+                    Reset Tournament Data
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'jb_premier_league_data_v3';
+
+        let defaultData = {
+            A: [
+                { id: 1, name: "Team A1", wins: 0, losses: 0, runs: 0, wickets: 0 },
+                { id: 2, name: "Team A2", wins: 0, losses: 0, runs: 0, wickets: 0 },
+                { id: 3, name: "Team A3", wins: 0, losses: 0, runs: 0, wickets: 0 },
+                { id: 4, name: "Team A4", wins: 0, losses: 0, runs: 0, wickets: 0 }
+            ],
+            B: [
+                { id: 5, name: "Team B1", wins: 0, losses: 0, runs: 0, wickets: 0 },
+                { id: 6, name: "Team B2", wins: 0, losses: 0, runs: 0, wickets: 0 },
+                { id: 7, name: "Team B3", wins: 0, losses: 0, runs: 0, wickets: 0 },
+                { id: 8, name: "Team B4", wins: 0, losses: 0, runs: 0, wickets: 0 }
+            ]
+        };
+
+        let groups = JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultData;
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(groups));
+        }
+
+        function calculateBonus(team) {
+            return (team.runs * (0.1/8)) + (team.wickets * 0.1);
+        }
+
+        function calculateTotal(team) {
+            // Base points: Wins are 2, Losses are 0 (as per latest request)
+            const base = (team.wins * 2); 
+            const bonus = calculateBonus(team);
+            // Apply bonus based on win/loss status
+            return team.wins > 0 || team.losses > 0 ? base + (team.wins >= team.losses ? bonus : -bonus) : 0;
+        }
+
+        function addMatch(groupId, teamId, isWin) {
+            const team = groups[groupId].find(t => t.id === teamId);
+            const r = parseInt(document.getElementById(`runs-${teamId}`).value) || 0;
+            const w = parseInt(document.getElementById(`wicks-${teamId}`).value) || 0;
+            
+            if (isWin) team.wins++; else team.losses++;
+            team.runs += r; 
+            team.wickets += w;
+            
+            document.getElementById(`runs-${teamId}`).value = '';
+            document.getElementById(`wicks-${teamId}`).value = '';
+            
+            saveData(); 
+            renderTables();
+        }
+
+        function renameTeam(groupId, teamId, newName) {
+            groups[groupId].find(t => t.id === teamId).name = newName;
+            saveData();
+        }
+
+        function renderTables() {
+            ['A', 'B'].forEach(groupId => {
+                const tbody = document.getElementById(`group-${groupId.toLowerCase()}-body`);
+                const sorted = [...groups[groupId]].sort((a, b) => calculateTotal(b) - calculateTotal(a));
+                
+                tbody.innerHTML = sorted.map((team, index) => {
+                    const isQualifying = index < 2;
+                    const bonusVal = calculateBonus(team);
+                    const isNegativeBonus = team.losses > team.wins;
+
+                    return `
+                    <tr class="border-b border-slate-100 ${isQualifying ? 'qualifier' : ''}">
+                        <td class="px-4 py-4 font-medium">
+                            <span contenteditable="true" onblur="renameTeam('${groupId}', ${team.id}, this.innerText)" class="editable-name">${team.name}</span>
+                            ${isQualifying ? '<span class="qualifier-badge">Top 2</span>' : ''}
+                        </td>
+                        <td class="px-2 py-4 text-center text-xs">
+                            <span class="text-blue-600 font-bold">${team.wins}W</span> 
+                            <span class="text-red-500 font-bold">${team.losses}L</span>
+                        </td>
+                        <td class="px-2 py-4 text-center font-semibold">${team.wins * 2}</td>
+                        <td class="px-2 py-4 text-center text-sm ${isNegativeBonus ? 'text-red-500' : 'text-emerald-600'}">
+                            ${isNegativeBonus ? '-' : '+'}${bonusVal.toFixed(2)}
+                        </td>
+                        <td class="px-2 py-4 text-center">
+                            <span class="bg-slate-800 text-white px-2 py-1 rounded text-sm font-bold">${calculateTotal(team).toFixed(2)}</span>
+                        </td>
+                        <td class="px-4 py-4 text-right">
+                            <div class="flex flex-col gap-1 items-end">
+                                <div class="flex gap-1 mb-1">
+                                    <input type="number" id="runs-${team.id}" placeholder="Runs" class="w-12 text-xs p-1 border rounded focus:ring-1 focus:ring-blue-400 outline-none">
+                                    <input type="number" id="wicks-${team.id}" placeholder="Wick" class="w-12 text-xs p-1 border rounded focus:ring-1 focus:ring-blue-400 outline-none">
+                                </div>
+                                <div class="flex gap-1">
+                                    <button onclick="addMatch('${groupId}', ${team.id}, true)" class="btn-action bg-blue-600 text-white px-2 py-1 rounded text-[10px] font-bold">WIN</button>
+                                    <button onclick="addMatch('${groupId}', ${team.id}, false)" class="btn-action bg-red-500 text-white px-2 py-1 rounded text-[10px] font-bold">LOSS</button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>`;
+                }).join('');
+            });
+        }
+
+        function resetData() { 
+            if(confirm("Are you sure you want to reset all data?")) { 
+                groups = JSON.parse(JSON.stringify(defaultData)); 
+                saveData(); 
+                renderTables(); 
+            } 
+        }
+
+        document.addEventListener('DOMContentLoaded', renderTables);
+    </script>
+</body>
+</html>
